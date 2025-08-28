@@ -1,0 +1,148 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Anime-inspired dark theme */
+    --background: 222 25% 5%;
+    --foreground: 270 10% 95%;
+
+    --card: 225 25% 8%;
+    --card-foreground: 270 10% 95%;
+
+    --popover: 225 25% 8%;
+    --popover-foreground: 270 10% 95%;
+
+    --primary: 270 95% 70%;
+    --primary-foreground: 225 25% 8%;
+
+    --secondary: 315 85% 65%;
+    --secondary-foreground: 225 25% 8%;
+
+    --muted: 225 25% 12%;
+    --muted-foreground: 270 10% 65%;
+
+    --accent: 200 95% 65%;
+    --accent-foreground: 225 25% 8%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 270 10% 95%;
+
+    --border: 225 25% 15%;
+    --input: 225 25% 12%;
+    --ring: 270 95% 70%;
+
+    --radius: 0.75rem;
+
+    /* Custom anime theme colors */
+    --anime-primary: 270 95% 70%;
+    --anime-secondary: 315 85% 65%;
+    --anime-accent: 200 95% 65%;
+    --anime-glow: 270 95% 80%;
+    
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(270 95% 70%), hsl(315 85% 65%));
+    --gradient-card: linear-gradient(145deg, hsl(225 25% 8% / 0.8), hsl(225 25% 12% / 0.9));
+    --gradient-hero: linear-gradient(135deg, hsl(270 95% 70% / 0.2), hsl(315 85% 65% / 0.2), hsl(200 95% 65% / 0.2));
+    
+    /* Shadows */
+    --shadow-glow: 0 0 40px hsl(270 95% 70% / 0.3);
+    --shadow-card: 0 10px 30px -10px hsl(225 25% 5% / 0.5);
+    
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    /* Dark theme is default - keep same values */
+    --background: 222 25% 5%;
+    --foreground: 270 10% 95%;
+
+    --card: 225 25% 8%;
+    --card-foreground: 270 10% 95%;
+
+    --popover: 225 25% 8%;
+    --popover-foreground: 270 10% 95%;
+
+    --primary: 270 95% 70%;
+    --primary-foreground: 225 25% 8%;
+
+    --secondary: 315 85% 65%;
+    --secondary-foreground: 225 25% 8%;
+
+    --muted: 225 25% 12%;
+    --muted-foreground: 270 10% 65%;
+
+    --accent: 200 95% 65%;
+    --accent-foreground: 225 25% 8%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 270 10% 95%;
+
+    --border: 225 25% 15%;
+    --input: 225 25% 12%;
+    --ring: 270 95% 70%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-medium;
+    background: radial-gradient(ellipse at top, hsl(270 95% 70% / 0.1), transparent 50%),
+                radial-gradient(ellipse at bottom right, hsl(315 85% 65% / 0.1), transparent 50%),
+                hsl(var(--background));
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--primary));
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary) / 0.8);
+  }
+}
