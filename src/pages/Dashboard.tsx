@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Sparkles, Settings, TrendingUp, Users, Heart, Clock } from "lucide-react";
+import { RecentBox } from "@/components/RecentBox";
+import { TrendingFeed } from "@/components/TrendingFeed";
+import { SupabaseConnectionTest } from "@/components/SupabaseConnectionTest";
 
 export default function Dashboard() {
   const [userName] = useState("Anime Fan"); // TODO: Get from auth context
@@ -85,6 +88,11 @@ export default function Dashboard() {
           ))}
         </div>
 
+        {/* Database Connection Status */}
+        <div className="mb-6">
+          <SupabaseConnectionTest />
+        </div>
+
         {/* Quick Actions */}
         <div className="space-y-6">
           <h2 className="text-2xl font-semibold text-foreground">Quick Actions</h2>
@@ -112,41 +120,11 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Recent Activity */}
-        <Card className="bg-gradient-card border-border/50">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Clock className="h-5 w-5 text-primary" />
-              <span>Recent Activity</span>
-            </CardTitle>
-            <CardDescription>Your latest interactions with CineSage</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center space-x-4 p-4 bg-muted/50 rounded-lg">
-                <Heart className="h-5 w-5 text-anime-secondary" />
-                <div className="flex-1">
-                  <p className="font-medium">Added "Attack on Titan" to favorites</p>
-                  <p className="text-sm text-muted-foreground">2 hours ago</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-4 p-4 bg-muted/50 rounded-lg">
-                <Sparkles className="h-5 w-5 text-anime-primary" />
-                <div className="flex-1">
-                  <p className="font-medium">Generated recommendations for "Shounen" genre</p>
-                  <p className="text-sm text-muted-foreground">1 day ago</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-4 p-4 bg-muted/50 rounded-lg">
-                <Settings className="h-5 w-5 text-anime-accent" />
-                <div className="flex-1">
-                  <p className="font-medium">Updated preferences to include "Romance" genre</p>
-                  <p className="text-sm text-muted-foreground">3 days ago</p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Recent and Trending Anime */}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <RecentBox />
+          <TrendingFeed />
+        </div>
 
         {/* CTA Section */}
         <div className="text-center space-y-4 py-8">
