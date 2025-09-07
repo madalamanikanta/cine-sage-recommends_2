@@ -51,7 +51,7 @@ export async function getAnimeByGenre(genreId: number, page = 1): Promise<JikanR
 }
 
 // Cache genres list
-let genresCache: { [key: string]: { mal_id: number; name: string }[] } | null = null;
+let genresCache: { mal_id: number; name: string }[] | null = null;
 
 export async function getAnimeGenres(): Promise<{ mal_id: number; name: string }[]> {
   if (genresCache) {
