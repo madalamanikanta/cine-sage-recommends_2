@@ -146,3 +146,12 @@ All colors MUST be HSL.
     background: hsl(var(--primary) / 0.8);
   }
 }
+/* src/index.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* small helper */
+.text-muted-foreground {
+  color: rgba(100, 116, 139, 1); /* slate-500-ish */
+}

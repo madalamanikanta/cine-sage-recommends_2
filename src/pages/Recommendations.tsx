@@ -1,58 +1,245 @@
+import React, { useEffect, useState } from "react";
 import { Navbar } from "@/components/layout/Navbar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useEffect, useState } from "react";
-import { Sparkles } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Loader2 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+
+interface AnimeItem {
+  mal_id: number;
+  url: string;
+  images?: { jpg?: { image_url?: string } };
+  title: string;
+  score?: number | null;
+  popularity?: number | null;
+  rank?: number | null;
+  genres?: { mal_id: number; name: string }[];
+  aired?: { from?: string | null };
+}
+
+const GENRE_NAME_TO_ID: Record<string, number> = {
+  Action: 1,
+  Adventure: 2,
+  Comedy: 4,
+  Drama: 8,
+  Fantasy: 10,
+  Horror: 14,
+  Mystery: 7,
+  Romance: 22,
+  "Sci-Fi": 24,
+  "Slice of Life": 36,
+  Sports: 30,
+  Thriller: 41,
+  Shounen: 27,
+  Shoujo: 25,
+  Seinen: 42,
+  Josei: 43,
+  Mecha: 18,
+  Supernatural: 37,
+};
+
+const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/gi, "");
+function mapGenreToId(genre: string): number | null {
+  const n = normalize(genre);
+  for (const [k, v] of Object.entries(GENRE_NAME_TO_ID)) {
+    if (normalize(k) === n) return v;
+  }
+  return null;
+}
 
 export default function Recommendations() {
-  const [recommendations, setRecommendations] = useState<any[]>([]);
+  const { user } = useAuth();
+  const { toast } = useToast();
+
+  const [genres, setGenres] = useState<string[]>([]);
+  const [keywords, setKeywords] = useState<string[]>([]);
+  const [popular, setPopular] = useState<AnimeItem[]>([]);
+  const [trending, setTrending] = useState<AnimeItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const genres = JSON.parse(localStorage.getItem("genres") || "[]");
-    const keywords = JSON.parse(localStorage.getItem("keywords") || "[]");
+    if (!user) {
+      setLoading(false);
+      setError("You must be logged in to see recommendations.");
+      return;
+    }
 
-    // mock data - replace with API later
-    const fakeData = [
-      { title: "Naruto", desc: "Action-packed ninja adventures", genre: "Shounen" },
-      { title: "Your Name", desc: "Romantic supernatural drama", genre: "Romance" },
-      { title: "Attack on Titan", desc: "Dark fantasy & survival", genre: "Action" },
-    ];
+    const loadPrefs = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("favorite_genres, preferred_studios")
+          .eq("id", user.id)
+          .single();
 
-    setRecommendations(fakeData);
+        if (error) throw error;
 
-    // log activity
-    const activity = {
-      action: "Viewed recommendations",
-      timestamp: new Date().toISOString(),
+        setGenres(data?.favorite_genres || []);
+        setKeywords(data?.preferred_studios || []);
+
+        if (data?.favorite_genres?.length) {
+          fetchRecommendations(data.favorite_genres);
+        } else {
+          setLoading(false);
+        }
+      } catch (err: any) {
+        console.error(err);
+        setError("Failed to load preferences.");
+        setLoading(false);
+      }
     };
-    const history = JSON.parse(localStorage.getItem("recentActivity") || "[]");
-    history.unshift(activity);
-    localStorage.setItem("recentActivity", JSON.stringify(history));
-  }, []);
+
+    loadPrefs();
+  }, [user]);
+
+  async function fetchRecommendations(favGenres: string[]) {
+    setLoading(true);
+    try {
+      const ids = favGenres.map(mapGenreToId).filter((x): x is number => !!x);
+      if (!ids.length) {
+        setError("No valid genres found in preferences.");
+        setLoading(false);
+        return;
+      }
+
+      // ✅ Fetch Popular (popularity order)
+      const popularRequests = ids.map((id) =>
+        fetch(`https://api.jikan.moe/v4/anime?genres=${id}&order_by=popularity&sort=asc&limit=12`).then((r) => r.json())
+      );
+
+      // ✅ Fetch Trending (members/recency order)
+      const trendingRequests = ids.map((id) =>
+        fetch(`https://api.jikan.moe/v4/anime?genres=${id}&order_by=members&sort=desc&limit=12`).then((r) => r.json())
+      );
+
+      const [popularRes, trendingRes] = await Promise.all([
+        Promise.all(popularRequests),
+        Promise.all(trendingRequests),
+      ]);
+
+      const mapPopular: Record<number, AnimeItem> = {};
+      popularRes.forEach((res) => {
+        (res.data || []).forEach((a: any) => {
+          mapPopular[a.mal_id] = {
+            mal_id: a.mal_id,
+            url: a.url,
+            images: a.images,
+            title: a.title,
+            score: a.score ?? null,
+            popularity: a.popularity ?? null,
+            rank: a.rank ?? null,
+            genres: a.genres ?? [],
+            aired: a.aired ?? { from: null },
+          };
+        });
+      });
+
+      const mapTrending: Record<number, AnimeItem> = {};
+      trendingRes.forEach((res) => {
+        (res.data || []).forEach((a: any) => {
+          mapTrending[a.mal_id] = {
+            mal_id: a.mal_id,
+            url: a.url,
+            images: a.images,
+            title: a.title,
+            score: a.score ?? null,
+            popularity: a.popularity ?? null,
+            rank: a.rank ?? null,
+            genres: a.genres ?? [],
+            aired: a.aired ?? { from: null },
+          };
+        });
+      });
+
+      setPopular(Object.values(mapPopular).slice(0, 24));
+      setTrending(Object.values(mapTrending).slice(0, 24));
+    } catch (err: any) {
+      console.error(err);
+      setError("Failed to fetch recommendations.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const renderGrid = (list: AnimeItem[]) => (
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+      {list.map((a) => (
+        <a
+          key={a.mal_id}
+          href={a.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+        >
+          <div className="aspect-[2/3] w-full bg-gray-100">
+            <img
+              src={a.images?.jpg?.image_url ?? ""}
+              alt={a.title}
+              className="w-full h-full object-cover"
+            />
+          </div>
+          <CardContent className="p-2">
+            {/* ✅ Anime title with theme color */}
+            <h3 className="text-sm font-semibold text-primary line-clamp-2">{a.title}</h3>
+            <div className="text-xs text-muted-foreground mt-1">
+              <div>Score: {a.score ?? "—"} · Rank: {a.rank ?? "—"}</div>
+              <div className="truncate">Genres: {a.genres?.map((g) => g.name).join(", ")}</div>
+            </div>
+          </CardContent>
+        </a>
+      ))}
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar isAuthenticated={true} onLogout={() => {}} />
-      <div className="container mx-auto p-6 space-y-6">
-        <div className="flex items-center justify-center space-x-3 mb-6">
-          <Sparkles className="h-8 w-8 text-primary animate-pulse" />
+      <Navbar isAuthenticated={!!user} onLogout={() => {}} />
+
+      <div className="container mx-auto p-6 space-y-8">
+        {/* Header */}
+        <div className="text-center space-y-4">
           <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
             Recommendations
           </h1>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            Discover anime tailored to your favorite genres and themes.
+          </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {recommendations.map((anime, idx) => (
-            <Card key={idx} className="bg-gradient-card border-border/50 hover:shadow-xl transition">
-              <CardHeader>
-                <CardTitle className="text-xl">{anime.title}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">{anime.desc}</p>
-                <p className="mt-2 text-xs text-primary">Genre: {anime.genre}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        {loading && (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="h-6 w-6 animate-spin mr-2" /> Loading recommendations...
+          </div>
+        )}
+
+        {error && <div className="text-center text-red-600">{error}</div>}
+
+        {!loading && !error && (
+          <>
+            <div className="mb-4 text-sm text-muted-foreground text-center">
+              Based on genres: <strong>{genres.join(", ") || "None"}</strong> & keywords:{" "}
+              <strong>{keywords.join(", ") || "None"}</strong>
+            </div>
+
+            {/* ✅ Popular Section */}
+            {popular.length > 0 && (
+              <section>
+                <h2 className="text-2xl font-bold text-white mb-4">🔥 Popular in your genres</h2>
+                {renderGrid(popular)}
+              </section>
+            )}
+
+            {/* ✅ Trending Section */}
+            {trending.length > 0 && (
+              <section>
+                <h2 className="text-2xl font-bold text-white mt-8 mb-4">📈 Trending now</h2>
+                {renderGrid(trending)}
+              </section>
+            )}
+          </>
+        )}
       </div>
     </div>
   );

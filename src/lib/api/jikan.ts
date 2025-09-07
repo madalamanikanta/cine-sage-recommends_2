@@ -1,7 +1,7 @@
 import { AnimeBase, JikanResponse } from "@/types/anime";
 
 const JIKAN_BASE_URL = "https://api.jikan.moe/v4";
-const RATE_LIMIT_DELAY = 1000; // 1 second delay between requests to respect rate limits
+const RATE_LIMIT_DELAY = 1000; // 1 second delay between requests
 
 async function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -11,20 +11,27 @@ async function fetchWithRateLimit<T>(endpoint: string): Promise<T> {
   const url = `${JIKAN_BASE_URL}${endpoint}`;
   await delay(RATE_LIMIT_DELAY);
   const response = await fetch(url);
-  
+
   if (!response.ok) {
     throw new Error(`Jikan API error: ${response.status} ${response.statusText}`);
   }
-  
+
   return response.json();
 }
 
+// ✅ Latest airing anime (this season only)
 export async function getRecentAnime(page = 1): Promise<JikanResponse<AnimeBase>> {
   return fetchWithRateLimit<JikanResponse<AnimeBase>>(`/seasons/now?page=${page}&limit=12`);
 }
 
+// ✅ Upcoming anime (next season, optional)
+export async function getUpcomingAnime(page = 1): Promise<JikanResponse<AnimeBase>> {
+  return fetchWithRateLimit<JikanResponse<AnimeBase>>(`/seasons/upcoming?page=${page}&limit=12`);
+}
+
+// ❌ Replaced old trending (kept if you still want it elsewhere)
 export async function getTrendingAnime(page = 1): Promise<JikanResponse<AnimeBase>> {
-  return fetchWithRateLimit<JikanResponse<AnimeBase>>(`/top/anime?filter=airing&page=${page}&limit=12`);
+  return fetchWithRateLimit<JikanResponse<AnimeBase>>(`/seasons/now?page=${page}&limit=12`);
 }
 
 export async function searchAnime(query: string, page = 1): Promise<JikanResponse<AnimeBase>> {
@@ -43,7 +50,7 @@ export async function getAnimeByGenre(genreId: number, page = 1): Promise<JikanR
   return fetchWithRateLimit<JikanResponse<AnimeBase>>(`/anime?genres=${genreId}&page=${page}&limit=12`);
 }
 
-// Cache for genres to avoid repeated API calls
+// Cache genres list
 let genresCache: { [key: string]: { mal_id: number; name: string }[] } | null = null;
 
 export async function getAnimeGenres(): Promise<{ mal_id: number; name: string }[]> {

@@ -46,6 +46,7 @@ export interface AnimeBase {
   images: AnimeImage;
   genres: AnimeGenre[];
   themes: AnimeTheme[];
+  
 }
 
 export interface JikanResponse<T> {
