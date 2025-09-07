@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Sparkles, Settings, TrendingUp, Users, Heart, Clock } from "lucide-react";
 import { RecentBox } from "@/components/RecentBox";
+import { useAuth } from "@/hooks/useAuth";
 import { TrendingFeed } from "@/components/TrendingFeed";
 import { SupabaseConnectionTest } from "@/components/SupabaseConnectionTest";
 
@@ -14,12 +15,19 @@ export default function Dashboard() {
   const [userName] = useState("Anime Fan"); // TODO: Get from auth context
   const navigate = useNavigate();
   const { toast } = useToast();
-
-  const handleLogout = () => {
-    toast({
-      title: "Logged out",
-      description: "You have been successfully logged out.",
-    });
+  const { user, signOut } = useAuth();
+  const recordActivity = (action: string) => {
+    const activity = {
+      action,
+      timestamp: new Date().toISOString(),
+    };
+    const history = JSON.parse(localStorage.getItem("recentActivity") || "[]");
+    history.unshift(activity);
+    localStorage.setItem("recentActivity", JSON.stringify(history));
+  };
+  const handleLogout = async () => {
+    await signOut();
+    recordActivity("Logged out");
     navigate("/");
   };
 
