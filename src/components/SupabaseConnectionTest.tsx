@@ -35,9 +35,8 @@ export function SupabaseConnectionTest() {
       <Alert variant="default" className="border-green-500 bg-green-500/10">
         <div className="flex items-center gap-2">
           <CheckCircle2 className="h-4 w-4 text-green-500" />
-          <AlertTitle>Database Connected</AlertTitle>
+          <AlertTitle>Enjoy Your Anime</AlertTitle>
         </div>
-        <AlertDescription>Successfully connected to Supabase!</AlertDescription>
       </Alert>
     );
   }
