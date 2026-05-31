@@ -31,7 +31,21 @@ npm run build
 
 # Post-deployment validation
 npm run deploy:check https://your-app.vercel.app
+
+# Local deployment health check
+npm run health-check -- https://your-app.vercel.app
 ```
+
+## Deployment Health Monitor
+
+This repository includes a GitHub Actions workflow that runs every 3 days and on manual dispatch.
+It validates the deployed site, public API dependencies, and Supabase connectivity.
+Upload the following GitHub secrets to use it:
+
+- `WEBSITE_URL`
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+- `PRODUCTION_URL` (optional)
 
 ## Common Issues & Solutions
 

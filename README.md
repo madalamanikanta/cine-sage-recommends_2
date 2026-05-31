@@ -101,6 +101,7 @@ npm run check-all
 | `npm run lint` | Run ESLint linter |
 | `npm run lint:fix` | Fix auto-fixable lint issues |
 | `npm run type-check` | Run TypeScript type checking |
+| `npm run health-check` | Run the deployment health monitor against a live website |
 | `npm run check-all` | Run all quality checks (lint + type + test) |
 | `npm run format` | Format code with Prettier |
 
@@ -120,32 +121,45 @@ npm run build
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_PUBLISHABLE_KEY`
 
-## 🔁 Supabase Heartbeat Workflow
+## 🔁 Deployment Health Monitor
 
-This project includes a GitHub Actions workflow at `.github/workflows/supabase-heartbeat.yml` that keeps the Supabase free-tier database active by sending a lightweight GET request to the Supabase REST API every 3 days.
+This project includes a GitHub Actions workflow at `.github/workflows/supabase-heartbeat.yml`.
+The workflow runs every 3 days and can also be triggered manually via the Actions UI.
+It verifies the deployed site, static assets, and Supabase credentials with lightweight checks.
 
-The workflow queries the existing `profiles` table with `?select=id&limit=1`, so it only fetches a single `id` field and does not modify data.
+The monitor performs:
+- HTTP 200 verification for homepage and critical SPA routes
+- Frontend asset loading checks for assets discovered in homepage HTML
+- environment configuration validation from deployment secrets
+- a lightweight Supabase read query against the `profiles` table
+- Supabase credential validation using the official Supabase client
 
-### Setup
-1. In GitHub, open your repository settings.
-2. Go to `Secrets and variables` → `Actions`.
-3. Add `SUPABASE_URL` with your Supabase project URL.
-4. Add `SUPABASE_ANON_KEY` with your Supabase anon/public API key.
+### Required GitHub Secrets
+1. `WEBSITE_URL` — production or staging site URL
+2. `SUPABASE_URL` — Supabase project URL
+3. `SUPABASE_ANON_KEY` — Supabase anon/public API key
+4. `PRODUCTION_URL` — optional alternative to `WEBSITE_URL`
 
-### Enabling GitHub Actions
-- Ensure GitHub Actions is enabled for this repository.
-- Push the `.github/workflows/supabase-heartbeat.yml` file to your repo.
-- GitHub will automatically schedule the workflow every 3 days.
-
-### Testing the workflow manually
+### Running the workflow manually
 1. Open the Actions tab in your GitHub repository.
-2. Select the `Supabase heartbeat` workflow.
+2. Select the `Deployment Health Monitor` workflow.
 3. Click `Run workflow`.
-4. Confirm the run succeeds and reports a 200 response.
+4. Optionally provide `website_url` to override the URL for this run.
+
+### Local health check
+Run the monitor locally against a deployed URL:
+
+```bash
+npm install
+npm run health-check -- https://your-app.example.com
+```
+
+If any critical check fails, the script exits with a non-zero status.
 
 ### Notes
-- This workflow uses the Supabase REST API directly because this repository does not currently include a dedicated server API route for heartbeat requests.
-- The heartbeat is intentionally lightweight and safe for free-tier usage.
+- The health monitor is intentionally lightweight and reads only one `id` from `profiles`.
+- It checks both the public Supabase REST API and the frontend deployment.
+- It is compatible with static SPA hosts when routing is configured to serve `index.html` for client-side routes.
 
 ### Manual Deployment
 

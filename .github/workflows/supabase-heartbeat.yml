@@ -1,37 +1,110 @@
-name: Supabase heartbeat
+name: Deployment Health Monitor
 
-# Run on a schedule and manually via GitHub Actions UI.
 on:
   schedule:
     # Every 3 days at midnight UTC.
     - cron: '0 0 */3 * *'
-  workflow_dispatch: []
+  workflow_dispatch:
+    inputs:
+      website_url:
+        description: 'Optional override URL for this workflow run.'
+        required: false
+        default: ''
 
 jobs:
-  heartbeat:
-    name: Supabase database heartbeat
+  health-monitor:
+    name: Deployment health monitor
     runs-on: ubuntu-latest
 
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      WEBSITE_URL: ${{ secrets.WEBSITE_URL }}
+      PRODUCTION_URL: ${{ secrets.PRODUCTION_URL }}
+
     steps:
-      - name: Send lightweight Supabase REST API request
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run deployment health checks
+        id: health-check
         run: |
-          echo "Pinging Supabase to keep free-tier database active..."
-
-          HTTP_STATUS=$(curl --silent --show-error --fail --output /dev/null \
-            -H "apikey: $SUPABASE_ANON_KEY" \
-            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
-            -H "Accept: application/json" \
-            "$SUPABASE_URL/rest/v1/profiles?select=id&limit=1" \
-            -w "%{http_code}")
-
-          echo "Supabase REST API HTTP status: $HTTP_STATUS"
-
-          if [ "$HTTP_STATUS" != "200" ]; then
-            echo "Supabase heartbeat failed with status $HTTP_STATUS"
-            exit 1
+          if [ -n "${{ github.event.inputs.website_url }}" ]; then
+            export WEBSITE_URL="${{ github.event.inputs.website_url }}"
           fi
+          npm run health-check
+        continue-on-error: true
 
-          echo "Supabase heartbeat succeeded."
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      - name: Create deployment health summary
+        if: always()
+        run: |
+          python3 - <<'PY'
+import json
+from pathlib import Path
+import os
+path = Path('health-report.json')
+if not path.exists():
+    print('Health report not found')
+    raise SystemExit(0)
+report = json.loads(path.read_text())
+summary = report.get('summary', {})
+lines = [
+    '## Deployment Health Monitor Summary',
+    '',
+    f"- Overall result: **{summary.get('overall', 'unknown').upper()}**",
+    f"- Website: passed={summary.get('website', {}).get('passed', 0)} failed={summary.get('website', {}).get('failed', 0)} warnings={summary.get('website', {}).get('warnings', 0)}",
+    f"- API: passed={summary.get('api', {}).get('passed', 0)} failed={summary.get('api', {}).get('failed', 0)} warnings={summary.get('api', {}).get('warnings', 0)}",
+    f"- Supabase: passed={summary.get('supabase', {}).get('passed', 0)} failed={summary.get('supabase', {}).get('failed', 0)} warnings={summary.get('supabase', {}).get('warnings', 0)}",
+    f"- Safe Supabase table: {summary.get('safeSupabaseTable', 'unknown')}",
+    f"- Duration: {summary.get('durationMs', 0)}ms",
+    ''
+]
+if summary.get('overall') != 'pass':
+    lines.append('### Failures and warnings')
+    for check in report.get('checks', []):
+        if not check.get('ok'):
+            lines.append(f"- {check.get('group')} / {check.get('name')} : {check.get('details')}")
+summary_path = os.environ.get('GITHUB_STEP_SUMMARY')
+if summary_path:
+    with open(summary_path, 'a', encoding='utf-8') as fh:
+        fh.write('\n'.join(lines) + '\n')
+else:
+    print('\n'.join(lines))
+PY
+
+      - name: Upload health report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-health-report
+          path: health-report.json
+
+      - name: Upload health log artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-health-log
+          path: health-check.log
+
+      - name: Fail on critical check failure
+        if: always()
+        run: |
+          python3 - <<'PY'
+import json
+from pathlib import Path
+path = Path('health-report.json')
+if not path.exists():
+    raise SystemExit(1)
+report = json.loads(path.read_text())
+if report.get('summary', {}).get('overall') != 'pass':
+    raise SystemExit(1)
+PY

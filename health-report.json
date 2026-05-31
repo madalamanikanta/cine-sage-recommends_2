@@ -1,0 +1,47 @@
+{
+  "generatedAt": "2026-05-31T14:32:19.675Z",
+  "checks": [
+    {
+      "group": "website",
+      "name": "Environment variable SUPABASE_URL",
+      "ok": false,
+      "critical": true,
+      "status": null,
+      "durationMs": 0,
+      "timestamp": "2026-05-31T14:32:19.755Z",
+      "details": "Missing required environment variable: SUPABASE_URL"
+    },
+    {
+      "group": "website",
+      "name": "Environment variable SUPABASE_ANON_KEY",
+      "ok": false,
+      "critical": true,
+      "status": null,
+      "durationMs": 0,
+      "timestamp": "2026-05-31T14:32:19.755Z",
+      "details": "Missing required environment variable: SUPABASE_ANON_KEY"
+    }
+  ],
+  "summary": {
+    "website": {
+      "passed": 0,
+      "failed": 2,
+      "warnings": 0
+    },
+    "api": {
+      "passed": 0,
+      "failed": 0,
+      "warnings": 0
+    },
+    "supabase": {
+      "passed": 0,
+      "failed": 0,
+      "warnings": 0
+    },
+    "overall": "fail",
+    "durationMs": 4,
+    "websiteUrl": "https://--help",
+    "safeSupabaseTable": null,
+    "runMode": "github-actions"
+  }
+}

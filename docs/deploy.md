@@ -84,30 +84,43 @@ npm install
 node scripts/post-deploy-check.js https://your-app.vercel.app
 ```
 
+You can also run the new utility directly:
+
+```bash
+npm install
+npm run health-check -- https://your-app.vercel.app
+```
+
+The GitHub Actions workflow uploads `health-report.json` and `health-check.log` as artifacts after every run. Use these artifacts to inspect exact route timings, API validation details, and Supabase connectivity results.
+
 **Expected Output:**
 ```
-🚀 Starting post-deployment checks for: https://your-app.vercel.app
-============================================================
+🚀 Starting health checks for: https://your-app.vercel.app
 
-🔍 Testing SPA Routing...
-✅ [timestamp] ✓ / returned 200
-✅ [timestamp] ✓ /auth returned 200
-✅ [timestamp] ✓ /dashboard returned 200
-✅ [timestamp] ✓ /catalog returned 200
-✅ [timestamp] ✓ /preferences returned 200
-✅ [timestamp] ✓ /recommendations returned 200
-✅ [timestamp] ✓ /profile returned 200
-✅ [timestamp] ✓ /non-existent-route returned 200
+✅ [timestamp] Route / returned 200 (page route)
+✅ [timestamp] Route /auth returned 200 (page route)
+✅ [timestamp] Route /dashboard returned 200 (page route)
+✅ [timestamp] Route /preferences returned 200 (page route)
+✅ [timestamp] Route /recommendations returned 200 (page route)
+✅ [timestamp] Route /recent returned 200 (page route)
+✅ [timestamp] Route /trending returned 200 (page route)
+✅ [timestamp] Route /login returned 200 (page route)
+✅ [timestamp] Route /register returned 200 (page route)
+✅ [timestamp] Route /non-existent-route returned 200 (SPA fallback)
 
-📦 Testing Static Assets...
-✅ [timestamp] ✓ /favicon.ico returned 200
-✅ [timestamp] ✓ /robots.txt returned 200
+📦 Asset checks:
+✅ [timestamp] Asset loaded: https://your-app.example.com/assets/... (.js/.css)
+✅ [timestamp] Asset loaded: https://your-app.example.com/robots.txt
 
-🔧 Checking Environment Configuration...
-✅ [timestamp] ✓ No obvious environment configuration errors
+✅ [timestamp] Supabase REST API /rest/v1/profiles?select=id&limit=1 returned 200
+✅ [timestamp] Supabase client query succeeded with 1 item(s)
 
-⚡ Performance Check...
-✅ [timestamp] ✓ Page loaded in 1247ms
+===== HEALTH CHECK SUMMARY =====
+Website status: PASS
+API status: PASS
+Supabase status: PASS
+Overall result: PASS
+```
 
 🔒 Security Headers Check...
 ℹ️ [timestamp] Optional header not set: x-frame-options
